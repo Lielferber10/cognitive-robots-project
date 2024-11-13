@@ -161,33 +161,57 @@ def parse_plan(plan, positions):
 
 
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    cube_nodes = []
-    positions = []
-    open_box_node = None
+#     cube_nodes = []
+#     positions = []
+#     open_box_node = None
 
-    # Load the input file
-    current_dir = os.path.dirname(__file__)
-    input_file_path = os.path.join(current_dir, 'input.json')
+#     # Load the input file
+#     current_dir = os.path.dirname(__file__)
+#     input_file_path = os.path.join(current_dir, 'input.json')
 
-    with open(input_file_path) as f:
-        input = json.load(f)
+#     with open(input_file_path) as f:
+#         input = json.load(f)
         
-    # Access predefined settings
-    floor_size = input.get("floor_size", {})
-    cubes_positions = input.get("cubes_positions", {})
+#     # Access predefined settings
+#     floor_size = input.get("floor_size", {})
+#     cubes_positions = input.get("cubes_positions", {})
 
-    # Get a movment plan of the robot based on the current input
+#     # Get a movment plan of the robot based on the current input
+#     processed_cubes_positions = {
+#         key: [[round(coord) for coord in pos[:2]] for pos in positions[:2]]
+#         for key, positions in cubes_positions.items()
+#     }
+#     plan, positions = get_plan((round(floor_size[0]), round(floor_size[1])), processed_cubes_positions)
+
+#     # Parse the plan and write it to plan.json
+#     parsed_plan = parse_plan(plan, positions)
+#     with open("plan.json", "w") as file:
+#         json.dump(parsed_plan, file)
+
+# should pip install
+from flask import Flask, jsonify, request
+
+app = Flask(__name__)
+
+@app.route('/generate_plan', methods=['POST'])
+def generate_plan():
+    data = request.get_json()
+    
+    floor_size = data.get("floor_size", {})
+    cubes_positions = data.get("cubes_positions", {})
+    
     processed_cubes_positions = {
-        key: [[round(coord) for coord in pos[:2]] for pos in positions[:2]]
+        key: [[round(coord) for coord in pos[:2]] for pos in positions]
         for key, positions in cubes_positions.items()
     }
+    
     plan, positions = get_plan((round(floor_size[0]), round(floor_size[1])), processed_cubes_positions)
-
-    # Parse the plan and write it to plan.json
     parsed_plan = parse_plan(plan, positions)
-    with open("plan.json", "w") as file:
-        json.dump(parsed_plan, file)
+    
+    return jsonify(parsed_plan)
 
-
+if __name__ == "__main__":
+    # run app on port 5000
+    app.run(debug=True)
