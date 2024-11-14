@@ -712,10 +712,16 @@ if __name__ == "__main__":
 
     input['cubes_positions'] = known_cubes
     
-    with open('input_for_server1.json', 'w') as file:
-        json.dump(input, file, indent=4)
+    # with open('input_for_server1.json', 'w') as file:
+    #     json.dump(input, file, indent=4)
     
-    
+    # make a call to the generate_plan in the API to get the plan
+    import sys
+    import json
+    import requests
+
+    json_input = json.dumps(input)
+    plan = requests.post("http://127.0.0.1:5000/generate_plan/", json=json_input).json()
     # Send input.json file for server
     
     
@@ -723,8 +729,8 @@ if __name__ == "__main__":
     
     
     # Load the plan
-    with open("plan1.json", "r") as file:
-        plan = json.load(file)
+    # with open("plan1.json", "r") as file:
+    #     plan = json.load(file)
     
     
     # Main loop - Execute the actions in the plan
@@ -780,10 +786,15 @@ if __name__ == "__main__":
             input['cubes_positions'] = known_cubes
             input['start_position'] = new_start_position
             
-            with open('input_for_server1.json', 'w') as file:
-                json.dump(input, file, indent=4)
+            # with open('input_for_server1.json', 'w') as file:
+            #     json.dump(input, file, indent=4)
             
-            
+            import sys
+            import json
+            import requests
+
+            json_input = json.dumps(input)
+            plan = requests.post("http://127.0.0.1:5000/generate_plan/", json=json_input).json()
             # Send input.json file for server
             
             
@@ -791,8 +802,8 @@ if __name__ == "__main__":
             
             
             # Load the plan
-            with open("plan1.json", "r") as file:
-                plan = json.load(file)
+            # with open("plan1.json", "r") as file:
+            #     plan = json.load(file)
         
         else:
             # Finish execution
