@@ -6,6 +6,7 @@ from unified_planning.shortcuts import Int
 
 import json
 import os
+from flask import Flask, request, jsonify
 
 
 up.shortcuts.get_env().credits_stream = None
@@ -161,7 +162,6 @@ def parse_plan(plan, positions):
 
 
 
-
 if __name__ == "__main__":
 
     cube_nodes = []
@@ -192,3 +192,24 @@ if __name__ == "__main__":
         json.dump(parsed_plan, file)
 
 
+# app = Flask(__name__)
+
+# @app.route('/generate_plan', methods=['POST'])
+# def generate_plan():
+#     data = request.get_json()
+    
+#     floor_size = data.get("floor_size", {})
+#     cubes_positions = data.get("cubes_positions", {})
+    
+#     processed_cubes_positions = {
+#         key: [[round(coord) for coord in pos[:2]] for pos in positions]
+#         for key, positions in cubes_positions.items()
+#     }
+    
+#     plan, positions = get_plan((round(floor_size[0]), round(floor_size[1])), processed_cubes_positions)
+#     parsed_plan = parse_plan(plan, positions)
+    
+#     return jsonify(parsed_plan)
+
+# if __name__ == "__main__":
+#     app.run(debug=True)
