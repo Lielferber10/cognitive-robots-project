@@ -3,6 +3,10 @@ from controller import Supervisor, Motor, PositionSensor, DistanceSensor
 import json
 import os
 import math
+import sys
+import json
+import requests
+import random
 
 
 TIME_STEP = 32
@@ -254,8 +258,8 @@ def pick(cube_id, position):
     
     # Step 2: Lower the arm to grasp the cube
     arms[0].setPosition(0.0)
-    arms[1].setPosition(-0.95)
-    arms[2].setPosition(-1.25)
+    arms[1].setPosition(-1.0)
+    arms[2].setPosition(-1.2)
     arms[3].setPosition(-0.9)
     arms[4].setPosition(0.0)
     robot.step(2*SECOND)
@@ -310,11 +314,11 @@ def pick(cube_id, position):
 
     elif cube_color == "blue" and num_of_collected_cubes["blue"] == 0: 
         arms[0].setPosition(-0.3)
-        arms[1].setPosition(0.45)
+        arms[1].setPosition(0.55)
         robot.step(SECOND)
-        arms[2].setPosition(1.1)
+        arms[2].setPosition(0.95)
         robot.step(2*SECOND)
-        arms[3].setPosition(0.8)
+        arms[3].setPosition(1.1)
         robot.step(2*SECOND)
         arms[4].setPosition(0.0)
         
@@ -419,7 +423,7 @@ def place(cube_id, destination):
         robot.step(SECOND)
         arms[2].setPosition(0.82)
         robot.step(2*SECOND)
-        arms[3].setPosition(1.15)
+        arms[3].setPosition(1.1)
         robot.step(2*SECOND)
         arms[4].setPosition(0.0)
                
@@ -486,7 +490,9 @@ def place(cube_id, destination):
         
         
 def move_after_place(last_position, destination):
-    global floor_size_field 
+    global floor_size_field
+    
+    visited_positiones = [last_position]
     # Set a straight-line movement speed
     movement_speed = -5.0  # rad/s
     
@@ -521,50 +527,76 @@ def move_after_place(last_position, destination):
         if abs(current_angle) < 0.05 or abs(math.pi - current_angle) < 0.05: 
             # Movment along y-axis
             move_to(last_position, (last_position[0], destination[1]))
+            visited_positiones.append((last_position[0], destination[1]))
+            
             # Movment along x-axis
             move_to((last_position[0], destination[1]), destination)
+            visited_positiones.append(destination)
             
         elif abs(math.pi/2 - current_angle) < 0.05 or abs((3*math.pi)/2 - current_angle) < 0.05:
             # Movment along x-axis
             move_to(last_position, (destination[0], last_position[1]))
+            visited_positiones.append((destination[0], last_position[1]))
+            
             # Movment along y-axis
             move_to((destination[0], last_position[1]), destination)
+            visited_positiones.append(destination)
     
     elif last_position[0] != destination[0] and last_position[1] == destination[1]:
         if last_position[1] < int(floor_size_field[1]//2):
             # Movment along y-axis
             move_to(last_position, (last_position[0], last_position[1]+1))
+            visited_positiones.append((last_position[0], last_position[1]+1))
+            
             # Movment along x-axis
             move_to((last_position[0], last_position[1]+1), (destination[0], last_position[1]+1))   
+            visited_positiones.append((destination[0], last_position[1]+1))
+            
             # Movment along y-axis
             move_to((destination[0], last_position[1]+1), (destination[0], last_position[1])) 
+            visited_positiones.append((destination[0], last_position[1]))
          
         elif last_position[1] > -int(floor_size_field[1]//2):
             # Movment along y-axis
             move_to(last_position, (last_position[0], last_position[1]-1))
+            visited_positiones.append((last_position[0], last_position[1]-1))
+            
             # Movment along x-axis
             move_to((last_position[0], last_position[1]-1), (destination[0], last_position[1]-1))   
+            visited_positiones.append((destination[0], last_position[1]-1))
+            
             # Movment along y-axis
             move_to((destination[0], last_position[1]-1), (destination[0], last_position[1]))   
+            visited_positiones.append((destination[0], last_position[1]))
             
     elif last_position[0] == destination[0] and last_position[1] != destination[1]:
         if last_position[0] < int(floor_size_field[0]//2):
             # Movment along x-axis
             move_to(last_position, (last_position[0]+1, last_position[1]))
+            visited_positiones.append((last_position[0]+1, last_position[1]))
+            
             # Movment along y-axis
             move_to((last_position[0]+1, last_position[1]), (last_position[0]+1, destination[1]))   
+            visited_positiones.append((last_position[0]+1, destination[1]))
+            
             # Movment along x-axis
             move_to((last_position[0]+1, destination[1]), (last_position[0], destination[1])) 
+            visited_positiones.append((last_position[0], destination[1]))
          
         elif last_position[0] > -int(floor_size_field[0]//2):
             # Movment along x-axis
             move_to(last_position, (last_position[0]-1, last_position[1]))
+            visited_positiones.append((last_position[0]-1, last_position[1]))
+            
             # Movment along y-axis
             move_to((last_position[0]-1, last_position[1]), (last_position[0]-1, destination[1]))   
+            visited_positiones.append((last_position[0]-1, destination[1]))
+            
             # Movment along x-axis
             move_to((last_position[0]-1, destination[1]), (last_position[0], destination[1]))        
-        
-        
+            visited_positiones.append((last_position[0], destination[1]))
+    
+    return visited_positiones  
 
 
 # Get the facing direction of the robot
@@ -580,14 +612,18 @@ def update_known_cubes(curr_pos):
     global known_cubes
     global vision_range
     global floor_size_field
+    global uninspected_positions
     
     updated = False
     for dx in range(-vision_range, vision_range + 1):
         for dy in range(-vision_range, vision_range + 1):
           if -int(floor_size_field[0]//2) <= curr_pos[0] + dx <= int(floor_size_field[0]//2) and -int(floor_size_field[1]//2) <= curr_pos[1] + dy <= int(floor_size_field[1]//2):
+            if (curr_pos[0] + dx, curr_pos[1] + dy) in uninspected_positions:
+                uninspected_positions.remove((curr_pos[0] + dx, curr_pos[1] + dy))
+            
             for cube_name, (initial_pos, destination_pos, color) in cubes_positions.items():
-                if initial_pos[:2] == (curr_pos[0] + dx, curr_pos[1] + dy) and cube_name not in cubes_positions.keys():
-                    known_cubes[cube_name] = (initial_pos, destination_pos, color)
+                if initial_pos[0] == curr_pos[0] + dx and initial_pos[1] == curr_pos[1] + dy and cube_name not in known_cubes.keys():
+                    known_cubes[cube_name] = [initial_pos, destination_pos, color, "not picked"]
                     updated = True
                     
     return updated
@@ -598,7 +634,7 @@ if __name__ == "__main__":
     cube_nodes = {}
     open_box_nodes = {}
     known_cubes = {}
-    
+
     # Load the input file
     controller_dir = os.path.dirname(__file__)
     input_file_path = os.path.join(controller_dir, 'input1.json')
@@ -612,7 +648,7 @@ if __name__ == "__main__":
     floor_size = input.get("floor_size", {})
     cubes_positions = input.get("cubes_positions", {})
     open_boxes_positions = input.get("open_boxes_positions", {})
-
+    num_of_cubes = input.get("num_of_cubes", {})
     
         
     
@@ -705,110 +741,153 @@ if __name__ == "__main__":
     num_of_collected_cubes = {"red": 0, "green": 0, "blue": 0}
     
     
-    
+    uninspected_positions = uninspected_positions = [(x, y) for x in range(-int(floor_size_field[0]//2), int(floor_size_field[0]//2) + 1) for y in range(-int(floor_size_field[1]//2), int(floor_size_field[1]//2) + 1)]
+    for box_position in open_boxes_positions.values():
+        uninspected_positions.remove(tuple(box_position[:2]))
 
     # Create initial input file for the server
     update_known_cubes(start_position)
 
     input['cubes_positions'] = known_cubes
     
-    # with open('input_for_server1.json', 'w') as file:
-    #     json.dump(input, file, indent=4)
     
-    # make a call to the generate_plan in the API to get the plan
-    import sys
-    import json
-    import requests
+    # Get initial plan
+    plan = None
+    if known_cubes == {}:
+        # The robot doesnt see cubes around it
+        destination = random.choice(uninspected_positions)    
+        curr_pos = get_current_position()
+        curr_pos = (round(curr_pos[0]), round(curr_pos[1]))
+        
+        exploration_input = {}
+        exploration_input["floor_size"] = input["floor_size"]
+        exploration_input["obstacles_positions"] = [value[:2] for value in input["open_boxes_positions"].values()]
+        exploration_input["start_position"] = curr_pos
+        exploration_input["destination_position"] = destination
+        
+        json_input = json.dumps(exploration_input)
+        plan = requests.post("http://127.0.0.1:5000/generate_exploration_plan", json=json_input).json()
 
-    json_input = json.dumps(input)
-    plan = requests.post("http://127.0.0.1:5000/generate_plan/", json=json_input).json()
-    # Send input.json file for server
-    
-    
-    # Get a plan.json file from the server
-    
-    
-    # Load the plan
-    # with open("plan1.json", "r") as file:
-    #     plan = json.load(file)
-    
+    else:
+        json_input = json.dumps(input)
+        plan = requests.post("http://127.0.0.1:5000/generate_plan", json=json_input).json()
+
     
     # Main loop - Execute the actions in the plan
+    num_of_correctly_placed_cubes = 0
     while(True):
         get_another_plan = False
         new_start_position = None
-        
+        skip_curr_command = False
+
         for i, action in enumerate(plan):
             command = action[0]
             pos_after_command = None
+            
             if command == "move":
-                if i > 0 and plan[i-1][0] == "place":
+                if i > 0 and plan[i-1][0] == "place" or skip_curr_command:
+                    skip_curr_command = False
                     continue
-                
+
                 start = tuple(action[1])
                 destination = tuple(action[2])
-                move_to(start, destination)
-                pos_after_command = destination
+
+                if (destination in [tuple(val[:2]) for val in open_boxes_positions.values()]) and (plan[i+1][0] == "move"):
+                    # If at move's destination there is open box and next command is also move the robot execute exploration plan. It will overtaking the box and move towards the next destination (comes after the box position) 
+                    visited_positiones = move_after_place(start, plan[i+1][2])
+                    for pos in visited_positiones:
+                        get_another_plan = get_another_plan or update_known_cubes(position)
+                    
+                    pos_after_command = plan[i+1][2]
+                    skip_curr_command = True
+                    
+                    
+                else:
+                    move_to(start, destination)
+                    get_another_plan = get_another_plan or update_known_cubes(destination)
+                    pos_after_command = destination
+                        
+                
                 
             elif command == "pick":
                 cube_id = action[1]
                 position = tuple(action[2])
                 pick(cube_id, position)
+                known_cubes[cube_id][3] = "picked"
+                get_another_plan = get_another_plan or update_known_cubes(position)
+                pos_after_command = position
                 
             elif command == "place":
                 cube_id = action[1]
                 destination = tuple(action[2])
                 place(cube_id, destination)
+                known_cubes[cube_id][3] = "placed"    # Mark that the cube has been placed at the desired place
+                num_of_correctly_placed_cubes += 1
+                
+                j=i-1
+                while plan[j][0] != "move":
+                    j -= 1
+                
+                   
+                previous_command = plan[j]
+                last_position = tuple(previous_command[1])
                 
                 if i < len(plan) - 1 and plan[i+1][0] != "place":
                 # Next command exists and it is necessary move
-                    j=i-1
-                    while plan[j][0] != "move":
-                        j -= 1
                     
-                       
-                    previous_command = plan[j]
                     next_command = plan[i+1]
-                    last_position = tuple(previous_command[1])
                     destination = tuple(next_command[2])
-                    move_after_place(last_position, destination)
+                    visited_positiones = move_after_place(last_position, destination)
+                    for pos in visited_positiones:
+                        get_another_plan = get_another_plan or update_known_cubes(position)
+                    
                     pos_after_command = destination
+                    
+                    
+                elif i == len(plan) - 1:
+                    # Plan execution has ended- Move backward to last position
+                    movement_speed = -5.0  # rad/s
+    
+                    # Start moving backrward
+                    right_front_wheel.setVelocity(movement_speed)
+                    right_back_wheel.setVelocity(movement_speed)
+                    left_front_wheel.setVelocity(movement_speed)
+                    left_back_wheel.setVelocity(movement_speed)
+    
+    
+                    # Loop to move towards destination and monitor distance sensor
+                    last_distance = calculate_distance(get_current_position(), last_position)
+                    while robot.step(SMALL_TIME_STEP) != -1:
+                        current_position = get_current_position()
+                
+                        if calculate_distance(current_position, last_position) > last_distance:  # Stop threshold for destination
+                            right_front_wheel.setVelocity(0)
+                            right_back_wheel.setVelocity(0)
+                            left_front_wheel.setVelocity(0)
+                            left_back_wheel.setVelocity(0)
+                            break
+                        else:
+                            last_distance = calculate_distance(current_position, last_position)
                      
-            # Update known cubes
-            updated = update_known_cubes(pos_after_command)
-            if updated:
-                get_another_plan = True
+            
+            # Check if a new plan needs to be created
+            if get_another_plan:
                 new_start_position = pos_after_command
                 break
-                
+
         if get_another_plan:
             # Create input file for the server
             input['cubes_positions'] = known_cubes
-            input['start_position'] = new_start_position
+            input['start_position'] = (new_start_position[0], new_start_position[1], 0.01)
             
-            # with open('input_for_server1.json', 'w') as file:
-            #     json.dump(input, file, indent=4)
-            
-            import sys
-            import json
-            import requests
 
             json_input = json.dumps(input)
-            plan = requests.post("http://127.0.0.1:5000/generate_plan/", json=json_input).json()
-            # Send input.json file for server
+            plan = requests.post("http://127.0.0.1:5000/generate_plan", json=json_input).json()
             
-            
-            # Get a plan.json file from the server
-            
-            
-            # Load the plan
-            # with open("plan1.json", "r") as file:
-            #     plan = json.load(file)
         
         else:
-            # Finish execution
-            if num_of_collected_cubes["red"] == num_of_collected_cubes["green"] == num_of_collected_cubes["blue"] == 0:
-                # Disable all working sensors of the robot
+            if num_of_correctly_placed_cubes == num_of_cubes:
+                # Finish execution - Disable all working sensors of the robot
                 distance_sensor_left.disable()
                 distance_sensor_middle.disable()
                 distance_sensor_right.disable()
@@ -816,6 +895,42 @@ if __name__ == "__main__":
                 finger_right_position_sensor.disable()
                 finger_left_position_sensor.disable()
             
-            break
-    
-    
+                break
+                
+            else:
+                # Move to randomly uninspected position. If the robot encounters unknown cube it generate new plan, otherwise it will generate new unknown destination to reach
+                while(not get_another_plan):
+                    destination = random.choice(uninspected_positions)    
+                    curr_pos = get_current_position()
+                    curr_pos = (round(curr_pos[0]), round(curr_pos[1]))
+                    
+                    exploration_input = {}
+                    exploration_input["floor_size"] = input["floor_size"]
+                    exploration_input["obstacles_positions"] = [value[:2] for value in input["open_boxes_positions"].values()]
+                    exploration_input["start_position"] = curr_pos
+                    exploration_input["destination_position"] = destination
+                    
+                    json_input = json.dumps(exploration_input)
+                    plan = requests.post("http://127.0.0.1:5000/generate_exploration_plan", json=json_input).json()
+
+                    pos_after_last_command = None
+                    for i, action in enumerate(plan):
+                        command = action[0]
+                        
+                        if command == "move":                          
+                            start = tuple(action[1])
+                            destination = tuple(action[2])
+                            move_to(start, destination)
+                            get_another_plan = get_another_plan or update_known_cubes(destination)
+                            pos_after_last_command = destination
+                            
+                            if get_another_plan:
+                                break
+                                
+                    if get_another_plan:
+                        input['cubes_positions'] = known_cubes
+                        input['start_position'] = (pos_after_last_command[0], pos_after_last_command[1], 0.01)
+                        
+
+                        json_input = json.dumps(input)
+                        plan = requests.post("http://127.0.0.1:5000/generate_plan", json=json_input).json()
