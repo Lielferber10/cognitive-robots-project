@@ -830,6 +830,7 @@ if __name__ == "__main__":
     # Main loop - Execute the actions in the plan
     num_of_correctly_placed_cubes = 0
     ACTION_COUNTER = 0
+    PLANNING_COUNTER = 1
     while(True):
         get_another_plan = False
         new_start_position = None
@@ -940,9 +941,10 @@ if __name__ == "__main__":
             input['cubes_positions'] = known_cubes
             input['start_position'] = (new_start_position[0], new_start_position[1], 0.01)
             
-
+            
             json_input = json.dumps(input)
             plan = requests.post("http://127.0.0.1:5000/generate_plan", json=json_input).json()
+            PLANNING_COUNTER += 1
             
         
         else:
@@ -954,7 +956,8 @@ if __name__ == "__main__":
                 
                 finger_right_position_sensor.disable()
                 finger_left_position_sensor.disable()
-            
+
+                print("Made", ACTION_COUNTER, "actions in this simulation, and made a plan", PLANNING_COUNTER, "times")
                 break
                 
             else:
@@ -977,7 +980,7 @@ if __name__ == "__main__":
                     
                     json_input = json.dumps(exploration_input)
                     plan = requests.post("http://127.0.0.1:5000/generate_exploration_plan", json=json_input).json()
-
+                    PLANNING_COUNTER += 1
                     pos_after_last_command = None
                     for i, action in enumerate(plan):
                         command = action[0]
@@ -999,3 +1002,4 @@ if __name__ == "__main__":
 
                         json_input = json.dumps(input)
                         plan = requests.post("http://127.0.0.1:5000/generate_plan", json=json_input).json()
+                        PLANNING_COUNTER += 1
