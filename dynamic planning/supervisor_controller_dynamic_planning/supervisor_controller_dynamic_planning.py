@@ -13,6 +13,12 @@ TIME_STEP = 32
 SMALL_TIME_STEP = 1
 SECOND = 30 * TIME_STEP
 
+# Simulation Parameters
+LOOKUP_FREQUENCY = 1
+LOOK_WHEN_OVER = False
+EXPLORATION_TYPE = 'regular' # / bresenham
+LINES_TO_CHECK = 3
+
 # Define helper functions for moving, picking, and placing
 
 # Perform U-turn (Rotate 180)
@@ -671,6 +677,9 @@ def explore_new_destination(current_position, uninspected_positions : list, use_
                 best_destination = destination
 
     return best_destination
+
+
+
 if __name__ == "__main__":
     
     cube_nodes = {}
@@ -799,8 +808,11 @@ if __name__ == "__main__":
         # The robot doesn't see cubes around it -> explores the room
         curr_pos = get_current_position()
         curr_pos = (round(curr_pos[0]), round(curr_pos[1]))
-        destination = explore_new_destination(curr_pos, uninspected_positions, use_heuristics=False)
-        
+        if EXPLORATION_TYPE == 'regular':
+            destination = explore_new_destination(curr_pos, uninspected_positions, use_heuristics=False)
+        else:
+            destination = explore_new_destination(curr_pos, uninspected_positions, use_heuristics=True, lines_check_num=LINES_TO_CHECK)
+
         exploration_input = {}
         exploration_input["floor_size"] = input["floor_size"]
         exploration_input["obstacles_positions"] = [value[:2] for value in input["open_boxes_positions"].values()]
@@ -818,8 +830,6 @@ if __name__ == "__main__":
     # Main loop - Execute the actions in the plan
     num_of_correctly_placed_cubes = 0
     ACTION_COUNTER = 0
-    LOOKUP_FREQUENCY = 1
-    LOOK_WHEN_OVER = False
     while(True):
         get_another_plan = False
         new_start_position = None
@@ -954,7 +964,10 @@ if __name__ == "__main__":
                 while(not get_another_plan):
                     curr_pos = get_current_position()
                     curr_pos = (round(curr_pos[0]), round(curr_pos[1]))
-                    destination = explore_new_destination(curr_pos, uninspected_positions, use_heuristics=False)
+                    if EXPLORATION_TYPE == 'regular':
+                        destination = explore_new_destination(curr_pos, uninspected_positions, use_heuristics=False)
+                    else:
+                        destination = explore_new_destination(curr_pos, uninspected_positions, use_heuristics=True, lines_check_num=LINES_TO_CHECK)
                     
                     exploration_input = {}
                     exploration_input["floor_size"] = input["floor_size"]
