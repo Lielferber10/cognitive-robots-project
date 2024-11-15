@@ -9,11 +9,9 @@ TIME_STEP = 32
 SMALL_TIME_STEP = 1
 SECOND = 30 * TIME_STEP
 
-# Define helper functions for moving, picking, and placing
 
-# Perform U-turn (Rotate 180)
+# Rotates the robot in place 180 degrees counterclockwise
 def u_turn():
-    # Rotate 180 degrees counterclockwise
     rotation_speed = 1.0
     left_front_wheel.setVelocity(-rotation_speed)
     right_back_wheel.setVelocity(rotation_speed)
@@ -51,7 +49,7 @@ def u_turn():
     
     
        
-# target_direction is pair of integers
+# Rotates the robot in place until its front is parallel to the target_direction vector
 def rotate(target_direction):
     facing_direction = get_facing_direction()
     # Calculate the angles
@@ -103,7 +101,7 @@ def rotate(target_direction):
     
 
 
-# Get the current position of the robot
+# Returns the current position of the robot as (x,y) tuple
 def get_current_position():
     robot_node = robot.getFromDef("myRobot")
     position_field = robot_node.getField("translation")
@@ -112,13 +110,13 @@ def get_current_position():
 
 
 
- # Calculate distance to destination
+# Returns the Euclidean distance between current_pos and dest_pos
 def calculate_distance(current_pos, dest_pos):
     return ((current_pos[0] - dest_pos[0]) ** 2 + (current_pos[1] - dest_pos[1]) ** 2) ** 0.5
 
 
 
-# start and destination are pairs of integers
+# Moves the robot from start position to destination position
 def move_to(start, destination):
     target_direction = (destination[0] - start[0], destination[1] - start[1])
     rotate(target_direction)
@@ -229,7 +227,7 @@ def move_to(start, destination):
 
 
 
-# position is a pair of integers representing the target location of the cube
+# Pick the cube with the id cube_id which is in front of the robot at position position and put it on the surface of the robot
 def pick(cube_id, position):
     global num_of_collected_cubes
     global cube_nodes
@@ -353,7 +351,7 @@ def pick(cube_id, position):
 
 
 
-# destination is a pair of integers
+# Place the cube with the id cube_id which is on the surface of the robot and put it on the open_box positioned at destination
 def place(cube_id, destination):
     global num_of_collected_cubes
     global cube_nodes
@@ -482,7 +480,7 @@ def place(cube_id, destination):
     
     
         
-        
+# Moves the robot after a series of Places commands from last_position position to destination position        
 def move_after_place(last_position, destination): 
     # Set a straight-line movement speed
     movement_speed = -5.0  # rad/s
@@ -564,7 +562,7 @@ def move_after_place(last_position, destination):
         
 
 
-# Get the facing direction of the robot
+# Returns the current facing direction of the robot as an (x,y) vector
 def get_facing_direction():
     robot_node = robot.getFromDef("myRobot")
     orientation = robot_node.getOrientation()
@@ -582,7 +580,7 @@ if __name__ == "__main__":
     
     # Load the input file
     controller_dir = os.path.dirname(__file__)
-    input_file_path = os.path.join(controller_dir, 'input1.json')
+    input_file_path = os.path.join(controller_dir, 'input2.json')
     
     with open(input_file_path) as f:
         input = json.load(f)
@@ -594,7 +592,7 @@ if __name__ == "__main__":
     
     
     # Load the plan
-    with open("plan1.json", "r") as file:
+    with open("plan2.json", "r") as file:
         plan = json.load(file)
         
     
