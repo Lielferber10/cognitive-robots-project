@@ -13,11 +13,7 @@ TIME_STEP = 32
 SMALL_TIME_STEP = 1
 SECOND = 30 * TIME_STEP
 
-# Simulation Parameters
-LOOKUP_FREQUENCY = 1
-LOOK_WHEN_OVER = False
-EXPLORATION_TYPE = 'regular' # / bresenham
-LINES_TO_CHECK = 3
+
 
 # Define helper functions for moving, picking, and placing
 
@@ -701,8 +697,14 @@ if __name__ == "__main__":
     open_boxes_positions = input.get("open_boxes_positions", {})
     num_of_cubes = input.get("num_of_cubes", {})
     
-        
-    
+
+    # Simulation Parameters
+    LOOKUP_FREQUENCY = input.get("lookup_frequency", 1)
+    LOOK_WHEN_OVER = input.get("look_when_over", False)
+    EXPLORATION_TYPE = input.get("exploration_type", 'regular') # / bresenham
+    LINES_TO_CHECK = input.get("lines_to_check", 3)
+
+
     # create the Robot (as supervisor) instance.
     robot = Supervisor()
     
