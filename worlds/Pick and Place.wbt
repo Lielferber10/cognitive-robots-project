@@ -1,0 +1,166 @@
+#VRML_SIM R2023b utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/robots/kuka/youbot/protos/Youbot.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/appearances/protos/Parquetry.proto"
+IMPORTABLE EXTERNPROTO "../protos/cube.proto"
+IMPORTABLE EXTERNPROTO "../protos/open_box.proto"
+
+WorldInfo {
+  contactProperties [
+    ContactProperties {
+      material1 "InteriorWheelMat"
+      coulombFriction [
+        0, 2, 0
+      ]
+      frictionRotation -0.785398 0
+      bounce 0
+      forceDependentSlip [
+        10, 0
+      ]
+    }
+    ContactProperties {
+      material1 "ExteriorWheelMat"
+      coulombFriction [
+        0, 2, 0
+      ]
+      frictionRotation 0.785398 0
+      bounce 0
+      forceDependentSlip [
+        10, 0
+      ]
+    }
+  ]
+}
+Viewpoint {
+  orientation 0.4390241325705072 -0.4386185242293094 -0.7841374887247877 4.470675793840398
+  position 0.031017043611286987 -5.836203695249639 9.441376630438494
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+DEF RECTANGLE_ARENA RectangleArena {
+  floorSize 7 7
+  floorTileSize 2 2
+  floorAppearance Parquetry {
+    type "chequered"
+    colorOverride 0.33333 0.66666 1
+  }
+  wallThickness 0.1
+  wallHeight 1
+}
+DEF myRobot Youbot {
+  rotation 0 0 1 1.5707996938995747
+  controller "supervisor_controller_dynamic_planning"
+  supervisor TRUE
+  bodySlot [
+    DistanceSensor {
+      translation 0.285 0 -0.08
+      rotation 1 0 0 0
+      children [
+        Solid {
+          translation -0.001 0 0
+          rotation 0 1 0 1.5708003061004252
+          children [
+            DEF DIS_SENSOR_SHAPE Shape {
+              appearance PBRAppearance {
+                baseColor 1 0 0
+                roughness 1
+                metalness 0
+              }
+              geometry Cylinder {
+                height 0.004
+                radius 0.004
+              }
+            }
+          ]
+          boundingObject USE DIS_SENSOR_SHAPE
+          rotationStep 0.261799
+        }
+      ]
+      name "distance sensor m"
+      lookupTable [
+        0 0 0
+        0.1 10 0
+        0.2 20 0
+        0.3 30 0
+        0.4 40 0
+        0.5 50 0
+        0.6 100 0
+      ]
+    }
+    DistanceSensor {
+      translation 0.283 -0.035 -0.08
+      rotation 1 0 0 0
+      children [
+        Solid {
+          translation -0.001 0 0
+          rotation 0 1 0 1.5708003061004252
+          children [
+            DEF DIS_SENSOR_SHAPE Shape {
+              appearance PBRAppearance {
+                baseColor 1 0 0
+                roughness 1
+                metalness 0
+              }
+              geometry Cylinder {
+                height 0.004
+                radius 0.004
+              }
+            }
+          ]
+          boundingObject USE DIS_SENSOR_SHAPE
+          rotationStep 0.261799
+        }
+      ]
+      name "distance sensor r"
+      lookupTable [
+        0 0 0
+        0.1 10 0
+        0.2 20 0
+        0.3 30 0
+        0.4 40 0
+        0.5 50 0
+        0.6 100 0
+      ]
+    }
+    DistanceSensor {
+      translation 0.283 0.035 -0.08
+      rotation 1 0 0 0
+      children [
+        Solid {
+          translation -0.001 0 0
+          rotation 0 1 0 1.5708003061004252
+          children [
+            DEF DIS_SENSOR_SHAPE Shape {
+              appearance PBRAppearance {
+                baseColor 1 0 0
+                roughness 1
+                metalness 0
+              }
+              geometry Cylinder {
+                height 0.004
+                radius 0.004
+              }
+            }
+          ]
+          boundingObject USE DIS_SENSOR_SHAPE
+          rotationStep 0.261799
+        }
+      ]
+      name "distance sensor l"
+      lookupTable [
+        0 0 0
+        0.1 10 0
+        0.2 20 0
+        0.3 30 0
+        0.4 40 0
+        0.5 50 0
+        0.6 100 0
+      ]
+    }
+  ]
+}
