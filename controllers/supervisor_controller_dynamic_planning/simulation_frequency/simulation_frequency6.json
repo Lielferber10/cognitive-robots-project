@@ -1,0 +1,25 @@
+{
+    "floor_size": [7,7],
+    "vision_range": 1,
+	"start_position": [0,0,0.01], 
+    "cubes_positions": {
+        "cube1": [[-3, 1, 0.035], [3, 0, 0.285], "red"],
+        "cube2": [[-2, -1, 0.035], [3, 0, 0.285], "red"],
+        "cube3": [[2, 1, 0.035], [-3, 0, 0.285], "blue"]
+    },
+	
+	"num_of_cubes": 3,
+	
+	"open_boxes_positions": {
+        "red": [3, 0, 0.125],
+        "blue": [-3, 0, 0.125]
+    },
+
+    "lookup_frequency": 6,
+    "look_when_over": false,
+    "exploration_type": "regular",
+    "lines_to_check": 3
+
+}
+
+

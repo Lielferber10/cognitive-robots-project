@@ -14,8 +14,12 @@ SMALL_TIME_STEP = 1
 SECOND = 30 * TIME_STEP
 
 
-# Rotates the robot in place 180 degrees counterclockwise
+
+# Define helper functions for moving, picking, and placing
+
+# Perform U-turn (Rotate 180)
 def u_turn():
+    # Rotate 180 degrees counterclockwise
     rotation_speed = 1.0
     left_front_wheel.setVelocity(-rotation_speed)
     right_back_wheel.setVelocity(rotation_speed)
@@ -53,7 +57,7 @@ def u_turn():
     
     
        
-# Rotates the robot in place until its front is parallel to the target_direction vector
+# target_direction is pair of integers
 def rotate(target_direction):
     facing_direction = get_facing_direction()
     # Calculate the angles
@@ -105,7 +109,7 @@ def rotate(target_direction):
     
 
 
-# Returns the current position of the robot as (x,y) tuple
+# Get the current position of the robot
 def get_current_position():
     robot_node = robot.getFromDef("myRobot")
     position_field = robot_node.getField("translation")
@@ -114,13 +118,13 @@ def get_current_position():
 
 
 
- # Returns the Euclidean distance between current_pos and dest_pos
+ # Calculate distance to destination
 def calculate_distance(current_pos, dest_pos):
     return ((current_pos[0] - dest_pos[0]) ** 2 + (current_pos[1] - dest_pos[1]) ** 2) ** 0.5
 
 
 
-# Moves the robot from start position to destination position
+# start and destination are pairs of integers
 def move_to(start, destination):
     target_direction = (destination[0] - start[0], destination[1] - start[1])
     rotate(target_direction)
@@ -233,7 +237,7 @@ def move_to(start, destination):
      
      
      
-# Pick the cube with the id cube_id which is in front of the robot at position position and put it on the surface of the robot
+# position is a pair of integers representing the target location of the cube
 def pick(cube_id, position):
     global num_of_collected_cubes
     global cube_nodes
@@ -357,7 +361,7 @@ def pick(cube_id, position):
 
 
 
-# Place the cube with the id cube_id which is on the surface of the robot and put it on the open_box positioned at destination
+# destination is a pair of integers
 def place(cube_id, destination):
     global num_of_collected_cubes
     global cube_nodes
@@ -486,7 +490,7 @@ def place(cube_id, destination):
     
     
         
-# Moves the robot after a series of Places commands from last_position position to destination position        
+        
 def move_after_place(last_position, destination):
     global floor_size_field
     
@@ -597,7 +601,7 @@ def move_after_place(last_position, destination):
     return visited_positiones  
 
 
-# Returns the current facing direction of the robot as an (x,y) vector
+# Get the facing direction of the robot
 def get_facing_direction():
     robot_node = robot.getFromDef("myRobot")
     orientation = robot_node.getOrientation()
@@ -605,15 +609,7 @@ def get_facing_direction():
     return facing_direction
     
     
-# Checks whether there are cubes inside a ring with radius 
-# 2*vision_range around the robot that are not belong to a global variable
-# “known_cubes” (a list of cubes that the robot knows exist with information
-# about them). Each such cube is added to this variable with the status 
-# "not picked". In addition, each position in the robot's range of vision 
-# (the aforementioned ring) is removed from a global variable 
-# “uninspected_positions” (a list of positions that the robot does not know 
-# what is in them. A random tour destination is selected from it 
-# when necessary)
+# Find all the cubes with an initial (and current) position in a square with side length vision_range around the robot, and store the information about them in known_cubes. Returns if there was an update or not
 def update_known_cubes(curr_pos):
     global known_cubes
     global vision_range
@@ -634,7 +630,55 @@ def update_known_cubes(curr_pos):
                     
     return updated
     
-    
+def bresenham_line(current_position, destination):
+    x0 = current_position[0]
+    y0 = current_position[1]
+    x1 = destination[0]
+    y1 = destination[1]
+    points = []
+    dx = abs(x1 - x0)
+    dy = abs(y1 - y0)
+    sx = 1 if x0 < x1 else -1
+    sy = 1 if y0 < y1 else -1
+    err = dx - dy
+    while True:
+        points.append((x0, y0))
+        if x0 == x1 and y0 == y1:
+            break
+        e2 = 2 * err
+        if e2 > -dy:
+            err -= dy
+            x0 += sx
+        if e2 < dx:
+            err += dx
+            y0 += sy
+    # filter the points so that they are all on the grid's bounds
+    points = [(x, y) for x, y in points if -int(floor_size_field[0]//2) <= x <= int(floor_size_field[0]//2) and -int(floor_size_field[1]//2) <= y <= int(floor_size_field[1]//2)]
+    return points
+
+def explore_new_destination(current_position, uninspected_positions : list, use_heuristics=False, lines_check_num=3):
+    if not use_heuristics:
+        destination = random.choice(uninspected_positions)    
+        return destination
+    else:
+        best_value = -math.inf
+        best_destination = None
+        print("computing Besenham's algorithm...")
+        for i in range(lines_check_num):
+            destination = random.choice(uninspected_positions)    
+            points_on_line = bresenham_line(current_position, destination)
+            value = 0
+            for point in points_on_line:
+                if point in uninspected_positions:
+                    value+=1
+            if value > best_value:
+                best_value = value
+                best_destination = destination
+
+    return best_destination
+
+
+
 if __name__ == "__main__":
     
     cube_nodes = {}
@@ -656,8 +700,14 @@ if __name__ == "__main__":
     open_boxes_positions = input.get("open_boxes_positions", {})
     num_of_cubes = input.get("num_of_cubes", {})
     
-        
-    
+
+    # Simulation Parameters
+    LOOKUP_FREQUENCY = input.get("lookup_frequency", 1)
+    LOOK_WHEN_OVER = input.get("look_when_over", False)
+    EXPLORATION_TYPE = input.get("exploration_type", 'regular') # / bresenham
+    LINES_TO_CHECK = input.get("lines_to_check", 3)
+
+
     # create the Robot (as supervisor) instance.
     robot = Supervisor()
     
@@ -747,7 +797,7 @@ if __name__ == "__main__":
     num_of_collected_cubes = {"red": 0, "green": 0, "blue": 0}
     
     
-    uninspected_positions = uninspected_positions = [(x, y) for x in range(-int(floor_size_field[0]//2), int(floor_size_field[0]//2) + 1) for y in range(-int(floor_size_field[1]//2), int(floor_size_field[1]//2) + 1)]
+    uninspected_positions = [(x, y) for x in range(-int(floor_size_field[0]//2), int(floor_size_field[0]//2) + 1) for y in range(-int(floor_size_field[1]//2), int(floor_size_field[1]//2) + 1)]
     for box_position in open_boxes_positions.values():
         uninspected_positions.remove(tuple(box_position[:2]))
 
@@ -756,15 +806,18 @@ if __name__ == "__main__":
 
     input['cubes_positions'] = known_cubes
     
-    
+
     # Get initial plan
     plan = None
     if known_cubes == {}:
-        # The robot doesnt see cubes around it
-        destination = random.choice(uninspected_positions)    
+        # The robot doesn't see cubes around it -> explores the room
         curr_pos = get_current_position()
         curr_pos = (round(curr_pos[0]), round(curr_pos[1]))
-        
+        if EXPLORATION_TYPE == 'regular':
+            destination = explore_new_destination(curr_pos, uninspected_positions, use_heuristics=False)
+        else:
+            destination = explore_new_destination(curr_pos, uninspected_positions, use_heuristics=True, lines_check_num=LINES_TO_CHECK)
+
         exploration_input = {}
         exploration_input["floor_size"] = input["floor_size"]
         exploration_input["obstacles_positions"] = [value[:2] for value in input["open_boxes_positions"].values()]
@@ -781,12 +834,15 @@ if __name__ == "__main__":
     
     # Main loop - Execute the actions in the plan
     num_of_correctly_placed_cubes = 0
+    ACTION_COUNTER = 0
+    PLANNING_COUNTER = 1
     while(True):
         get_another_plan = False
         new_start_position = None
         skip_curr_command = False
 
         for i, action in enumerate(plan):
+            ACTION_COUNTER += 1
             command = action[0]
             pos_after_command = None
             
@@ -799,10 +855,11 @@ if __name__ == "__main__":
                 destination = tuple(action[2])
 
                 if (destination in [tuple(val[:2]) for val in open_boxes_positions.values()]) and (plan[i+1][0] == "move"):
-                    # If at move's destination there is open box and next command is also move the robot execute exploration plan. It will overtaking the box and move towards the next destination (comes after the box position) 
+                    # If at move's destination there is an open box and next command is also move the robot executes exploration plan. It will overtake the box and move towards the next destination (comes after the box position) 
                     visited_positiones = move_after_place(start, plan[i+1][2])
                     for pos in visited_positiones:
-                        get_another_plan = get_another_plan or update_known_cubes(position)
+                        if ACTION_COUNTER % LOOKUP_FREQUENCY == 0 and not LOOK_WHEN_OVER:
+                            get_another_plan = get_another_plan or update_known_cubes(position) # updates seen cubes after getting to the destination
                     
                     pos_after_command = plan[i+1][2]
                     skip_curr_command = True
@@ -810,7 +867,8 @@ if __name__ == "__main__":
                     
                 else:
                     move_to(start, destination)
-                    get_another_plan = get_another_plan or update_known_cubes(destination)
+                    if ACTION_COUNTER % LOOKUP_FREQUENCY == 0 and not LOOK_WHEN_OVER:
+                        get_another_plan = get_another_plan or update_known_cubes(destination) # updates seen cubes after getting to the destination
                     pos_after_command = destination
                         
                 
@@ -820,7 +878,8 @@ if __name__ == "__main__":
                 position = tuple(action[2])
                 pick(cube_id, position)
                 known_cubes[cube_id][3] = "picked"
-                get_another_plan = get_another_plan or update_known_cubes(position)
+                if not LOOK_WHEN_OVER:
+                    get_another_plan = get_another_plan or update_known_cubes(position)
                 pos_after_command = position
                 
             elif command == "place":
@@ -839,13 +898,15 @@ if __name__ == "__main__":
                 last_position = tuple(previous_command[1])
                 
                 if i < len(plan) - 1 and plan[i+1][0] != "place":
-                # Next command exists and it is necessary move
+                # Next command exists and it is to necessary move
                     
                     next_command = plan[i+1]
                     destination = tuple(next_command[2])
+                    position = tuple(action[2])
                     visited_positiones = move_after_place(last_position, destination)
                     for pos in visited_positiones:
-                        get_another_plan = get_another_plan or update_known_cubes(position)
+                        if not LOOK_WHEN_OVER:
+                            get_another_plan = get_another_plan or update_known_cubes(position)
                     
                     pos_after_command = destination
                     
@@ -886,9 +947,10 @@ if __name__ == "__main__":
             input['cubes_positions'] = known_cubes
             input['start_position'] = (new_start_position[0], new_start_position[1], 0.01)
             
-
+            
             json_input = json.dumps(input)
             plan = requests.post("http://127.0.0.1:5000/generate_plan", json=json_input).json()
+            PLANNING_COUNTER += 1
             
         
         else:
@@ -900,15 +962,23 @@ if __name__ == "__main__":
                 
                 finger_right_position_sensor.disable()
                 finger_left_position_sensor.disable()
-            
+
+                print("Made", ACTION_COUNTER, "actions in this simulation, and made a plan", PLANNING_COUNTER, "times")
                 break
                 
             else:
+                position = get_current_position()
+                if LOOK_WHEN_OVER: # In this mode, the agent looks for more cubes only when it finishes a plan and is still missing cubes.
+                    get_another_plan = get_another_plan or update_known_cubes(position)
+                    print("replanning: ", get_another_plan)
                 # Move to randomly uninspected position. If the robot encounters unknown cube it generate new plan, otherwise it will generate new unknown destination to reach
                 while(not get_another_plan):
-                    destination = random.choice(uninspected_positions)    
                     curr_pos = get_current_position()
                     curr_pos = (round(curr_pos[0]), round(curr_pos[1]))
+                    if EXPLORATION_TYPE == 'regular':
+                        destination = explore_new_destination(curr_pos, uninspected_positions, use_heuristics=False)
+                    else:
+                        destination = explore_new_destination(curr_pos, uninspected_positions, use_heuristics=True, lines_check_num=LINES_TO_CHECK)
                     
                     exploration_input = {}
                     exploration_input["floor_size"] = input["floor_size"]
@@ -918,7 +988,7 @@ if __name__ == "__main__":
                     
                     json_input = json.dumps(exploration_input)
                     plan = requests.post("http://127.0.0.1:5000/generate_exploration_plan", json=json_input).json()
-
+                    PLANNING_COUNTER += 1
                     pos_after_last_command = None
                     for i, action in enumerate(plan):
                         command = action[0]
@@ -940,3 +1010,4 @@ if __name__ == "__main__":
 
                         json_input = json.dumps(input)
                         plan = requests.post("http://127.0.0.1:5000/generate_plan", json=json_input).json()
+                        PLANNING_COUNTER += 1

@@ -899,6 +899,7 @@ if __name__ == "__main__":
                     
                     next_command = plan[i+1]
                     destination = tuple(next_command[2])
+                    position = tuple(action[2])
                     visited_positiones = move_after_place(last_position, destination)
                     for pos in visited_positiones:
                         if not LOOK_WHEN_OVER:
