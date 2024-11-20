@@ -285,9 +285,9 @@ def pick(cube_id, position):
         
     elif cube_color == "red" and num_of_collected_cubes["red"] == 1:
         arms[0].setPosition(0.3)
-        arms[1].setPosition(0.37)
+        arms[1].setPosition(0.4)
         robot.step(SECOND)
-        arms[2].setPosition(2.2)
+        arms[2].setPosition(2.15)
         robot.step(2*SECOND)
         arms[3].setPosition(-0.85)
         robot.step(2*SECOND)
@@ -394,7 +394,7 @@ def place(cube_id, destination):
         arms[4].setPosition(0.0)
         
     elif cube_color == "red" and num_of_collected_cubes["red"] == 2:
-        arms[0].setPosition(0.32)
+        arms[0].setPosition(0.3)
         arms[1].setPosition(0.75)
         arms[2].setPosition(0.4)
         arms[3].setPosition(1.3)
@@ -687,7 +687,7 @@ if __name__ == "__main__":
 
     # Load the input file
     controller_dir = os.path.dirname(__file__)
-    input_file_path = os.path.join(controller_dir, 'input1.json')
+    input_file_path = os.path.join(controller_dir, 'simulation_replanning/simulation_replanning_when_over.json')
     
     with open(input_file_path) as f:
         input = json.load(f)

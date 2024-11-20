@@ -580,7 +580,7 @@ if __name__ == "__main__":
     
     # Load the input file
     controller_dir = os.path.dirname(__file__)
-    input_file_path = os.path.join(controller_dir, 'input2.json')
+    input_file_path = os.path.join(controller_dir, 'input1 copy.json')
     
     with open(input_file_path) as f:
         input = json.load(f)
