@@ -652,6 +652,8 @@ def bresenham_line(current_position, destination):
         if e2 < dx:
             err += dx
             y0 += sy
+    # filter the points so that they are all on the grid's bounds
+    points = [(x, y) for x, y in points if -int(floor_size_field[0]//2) <= x <= int(floor_size_field[0]//2) and -int(floor_size_field[1]//2) <= y <= int(floor_size_field[1]//2)]
     return points
 
 def explore_new_destination(current_position, uninspected_positions : list, use_heuristics=False, lines_check_num=3):
@@ -661,6 +663,7 @@ def explore_new_destination(current_position, uninspected_positions : list, use_
     else:
         best_value = -math.inf
         best_destination = None
+        print("computing Besenham's algorithm...")
         for i in range(lines_check_num):
             destination = random.choice(uninspected_positions)    
             points_on_line = bresenham_line(current_position, destination)
@@ -964,8 +967,10 @@ if __name__ == "__main__":
                 break
                 
             else:
+                position = get_current_position()
                 if LOOK_WHEN_OVER: # In this mode, the agent looks for more cubes only when it finishes a plan and is still missing cubes.
                     get_another_plan = get_another_plan or update_known_cubes(position)
+                    print("replanning: ", get_another_plan)
                 # Move to randomly uninspected position. If the robot encounters unknown cube it generate new plan, otherwise it will generate new unknown destination to reach
                 while(not get_another_plan):
                     curr_pos = get_current_position()
